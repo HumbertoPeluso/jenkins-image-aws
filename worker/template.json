@@ -26,5 +26,13 @@
             "script" : "./setup.sh",
             "execute_command" : "sudo -E -S sh '{{ .Path }}'"
         }
-    ]
+    ],
+    "post-processors": [{
+        "type": "vagrant",
+        "output": "output.box"
+      }, {
+        "type": "vagrant",
+        "output": "output",
+        "vagrantfile_template": "vagrantfile.tpl"
+      }]
 }
