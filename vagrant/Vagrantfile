@@ -1,0 +1,54 @@
+servers=[
+      {
+        :type => "worker",
+        :hostname => "jenkins-worker",
+        :ip => "192.168.1.200",
+        :guestport => 80,
+        :hostport => 8089,
+        :ram => 2048
+      },
+      {
+        :type => "master",
+        :hostname => "jenkins-master",
+        :ip => "192.168.1.201",
+        :guestport => 80,
+        :hostport => 8090,
+        :sshkeypath => "",
+        :ram => 2048
+      }
+    ]
+
+Vagrant.configure("2") do |config|
+  servers.each do |machine|
+    if machine[:type] == "worker"
+      config.vm.define machine[:hostname] do |node|
+        node.vm.box = "wasilak/amazon-linux-2"
+        node.vm.provision "shell", path: "setup-worker.sh", run: 'always'
+        node.vm.hostname = machine[:hostname]
+        node.vm.network "forwarded_port", guest: machine[:guestport], host:machine[:hostport]
+        node.vm.network "public_network", ip: machine[:ip]
+        node.vm.provider "virtualbox" do |vb|
+    # Customize the amount of memory on the VM:
+          vb.memory = machine[:ram]
+          vb.name = machine[:hostname]
+        end
+      end
+    elsif machine[:type] == "master"
+      config.vm.define machine[:hostname] do |node|
+        node.vm.box = "wasilak/amazon-linux-2"
+        node.vm.hostname = machine[:hostname]
+        node.vm.network "forwarded_port", guest: machine[:guestport], host:machine[:hostport]
+        node.vm.network "public_network", ip: machine[:ip]
+        node.vm.provision "file", source: "./scripts", destination: "/tmp/" , run: 'always'
+        node.vm.provision "file", source: "./config", destination: "/tmp/", run: 'always'
+        node.vm.provision "file", source: machine[:sshkeypath], destination: "/tmp/id_rsa", run: 'always'
+        node.vm.provision "shell", path: "setup-master.sh", run: 'always'
+        node.vm.provider "virtualbox" do |vb|
+      # Customize the amount of memory on the VM:
+          vb.memory = machine[:ram]
+          vb.name = machine[:hostname]
+        end
+      end
+    end
+  end
+end
